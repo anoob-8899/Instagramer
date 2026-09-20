@@ -1,17 +1,49 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Shield, Users, FileText, AlertTriangle, ShieldCheck, Activity, ArrowLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Shield, Users, FileText, AlertTriangle, ShieldCheck, Activity, ArrowLeft, LogOut, Cpu } from "lucide-react";
 import { clsx } from "clsx";
 
 export interface AdminShellProps {
   children: React.ReactNode;
 }
 
+export interface AdminUserState {
+  username: string;
+  email: string;
+  role: string;
+}
+
 export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AdminUserState | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setCurrentUser({
+            username: data.user.username,
+            email: data.user.email,
+            role: data.user.role,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   const adminNavItems = [
     { label: "Dashboard", href: "/admin", icon: Activity },
@@ -19,6 +51,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
     { label: "Posts", href: "/admin/posts", icon: FileText },
     { label: "Reports", href: "/admin/reports", icon: AlertTriangle },
     { label: "Security", href: "/admin/security", icon: ShieldCheck },
+    { label: "Security Lab", href: "/admin/security/lab", icon: Cpu },
     { label: "Audit Logs", href: "/admin/audit-logs", icon: Shield },
   ];
 
@@ -34,7 +67,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
             </span>
           </div>
           <span className="rounded bg-red-950 px-2 py-0.5 text-[10px] font-mono text-red-400 border border-red-800">
-            CON 01
+            CON 07
           </span>
         </div>
 
@@ -60,7 +93,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
           })}
         </nav>
 
-        <div className="border-t border-slate-800 pt-4">
+        <div className="border-t border-slate-800 pt-4 space-y-1">
           <Link
             href="/feed"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -68,6 +101,13 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
             <ArrowLeft className="h-4 w-4" />
             <span>Return to App Shell</span>
           </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-400 hover:bg-slate-800 hover:text-red-400"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
@@ -76,10 +116,15 @@ export const AdminShell: React.FC<AdminShellProps> = ({ children }) => {
         <header className="h-14 border-b border-slate-800 bg-slate-900/60 px-6 flex items-center justify-between">
           <h2 className="text-xs font-mono uppercase text-slate-400 tracking-wider">
             Instagramer Administration & Security Center
+            {currentUser && (
+              <span className="ml-3 text-red-400 font-normal">
+                | Admin: @{currentUser.username}
+              </span>
+            )}
           </h2>
           <div className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-mono text-emerald-400">System Ready (Disconnected DB)</span>
+            <span className="text-xs font-mono text-emerald-400">System Online (Neon DB Connected)</span>
           </div>
         </header>
 

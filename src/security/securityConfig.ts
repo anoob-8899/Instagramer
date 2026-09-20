@@ -1,8 +1,8 @@
 /**
- * Security Configuration Settings (CON 01 Boundary)
+ * Security Configuration Settings
  * 
- * Defines architectural defaults for upcoming authentication, lockout,
- * session security, and encryption modules.
+ * Centralized security parameters for authentication, password policies,
+ * account lockout, session management, and rate limiting.
  */
 
 export interface SecurityConfig {
@@ -10,15 +10,13 @@ export interface SecurityConfig {
   lockoutDurationMinutes: number;
   sessionTtlHours: number;
   minPasswordLength: number;
-  requireSpecialChar: boolean;
-  requireNumber: boolean;
+  cookieName: string;
 }
 
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   maxLoginAttempts: 5,
   lockoutDurationMinutes: 15,
   sessionTtlHours: 24,
-  minPasswordLength: 12,
-  requireSpecialChar: true,
-  requireNumber: true,
+  minPasswordLength: 8,
+  cookieName: "sb_auth_token",
 };

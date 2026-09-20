@@ -7,8 +7,8 @@ export async function GET() {
       app: "Instagramer",
       version: "0.1.0",
       timestamp: new Date().toISOString(),
-      database: "disconnected (CON 01 foundation)",
     },
     { status: 200 }
   );
 }
+
