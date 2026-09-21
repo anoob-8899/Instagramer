@@ -73,8 +73,8 @@ async function runCryptoTests() {
   // 6. Tamper Detection Test
   console.log("Test 6: Tamper detection test (bit-flip in ciphertext)...");
   let tamperedCt = parsedPayload.ct;
-  const flippedChar = tamperedCt.charAt(tamperedCt.length - 2) === "A" ? "B" : "A";
-  tamperedCt = tamperedCt.slice(0, -2) + flippedChar + tamperedCt.slice(-1);
+  const flippedChar = tamperedCt.charAt(0) === "A" ? "B" : "A";
+  tamperedCt = flippedChar + tamperedCt.slice(1);
   const tamperedPayload = JSON.stringify({ ...parsedPayload, ct: tamperedCt });
 
   let tamperCaught = false;

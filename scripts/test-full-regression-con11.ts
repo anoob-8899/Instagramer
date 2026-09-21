@@ -429,8 +429,8 @@ async function runComprehensiveAudit() {
 
     // Tamper detection
     let tamperedCt = parsedCiphertext.ct;
-    const bitFlip = tamperedCt.charAt(tamperedCt.length - 2) === "A" ? "B" : "A";
-    tamperedCt = tamperedCt.slice(0, -2) + bitFlip + tamperedCt.slice(-1);
+    const bitFlip = tamperedCt.charAt(0) === "A" ? "B" : "A";
+    tamperedCt = bitFlip + tamperedCt.slice(1);
     const tamperedPayload = JSON.stringify({ ...parsedCiphertext, ct: tamperedCt });
 
     let tamperCaught = false;

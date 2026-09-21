@@ -39,6 +39,7 @@ export default function MessagingDemoPage() {
     decryptedPlaintext: string;
     tamperedCiphertext: string;
     tamperError: string | null;
+    tamperPassed: boolean;
   } | null>(null);
 
   const runSimulation = async () => {
@@ -69,10 +70,14 @@ export default function MessagingDemoPage() {
       const tamperedPayload = JSON.stringify({ ...parsed, ct: tampered });
 
       let tamperErr: string | null = null;
+      let tamperPassed = false;
       try {
         await decryptMessage(tamperedPayload, bobSharedKey);
-      } catch (err: any) {
-        tamperErr = err.message || "AES-GCM Authentication Tag Mismatch";
+        tamperErr = "UNEXPECTED FAILURE: Tampered ciphertext was decrypted without throwing an authentication tag mismatch error.";
+        tamperPassed = false;
+      } catch {
+        tamperErr = "Tampering detected successfully. AES-GCM authentication rejected the modified message.";
+        tamperPassed = true;
       }
 
       setDemoState({
@@ -85,6 +90,7 @@ export default function MessagingDemoPage() {
         decryptedPlaintext: decrypted,
         tamperedCiphertext: tampered,
         tamperError: tamperErr,
+        tamperPassed,
       });
     } catch (err) {
       console.error("Demo execution error:", err);
@@ -275,12 +281,17 @@ export default function MessagingDemoPage() {
             </Card>
 
             {/* Tamper Detection */}
-            <Card className="border-slate-800 bg-slate-900 text-slate-100">
+            <Card className={demoState.tamperPassed ? "border-emerald-900/40 bg-slate-900 text-slate-100" : "border-rose-900/40 bg-slate-900 text-slate-100"}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-rose-400 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-rose-400" />
-                  4. Tamper Detection Test
-                </CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-semibold text-emerald-400 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    4. Tamper Detection Test (1-Bit Modification Detected)
+                  </CardTitle>
+                  <Badge className="bg-emerald-950 text-emerald-300 border-emerald-700/50 text-[10px] uppercase tracking-wider font-mono">
+                    STATUS: PASS — TAMPERING DETECTED
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
                 <p className="text-slate-400 text-[11px]">
@@ -288,19 +299,58 @@ export default function MessagingDemoPage() {
                 </p>
                 <div className="rounded-xl bg-slate-950 p-3 border border-slate-800">
                   <span className="text-[10px] text-slate-500 block mb-1">TAMPERED CIPHERTEXT:</span>
-                  <p className="font-mono text-rose-300 text-[11px] truncate">
+                  <p className="font-mono text-amber-300/80 text-[11px] truncate">
                     {demoState.tamperedCiphertext}
                   </p>
                 </div>
-                <div className="rounded-xl bg-rose-950/40 border border-rose-900/60 p-2.5 text-rose-300 text-[11px] flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold">Authentication Tag Failure Detected:</span>
-                    <p className="text-[10px] text-rose-400 mt-0.5">
-                      {demoState.tamperError || "AES-GCM authentication verification failed. Decryption was rejected."}
-                    </p>
+
+                {demoState.tamperPassed ? (
+                  <>
+                    <div className="space-y-1.5 text-[11px] font-mono text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">ORIGINAL MESSAGE</span>
+                        <span className="text-emerald-400 flex items-center gap-1">✓ Decrypted</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">1-BIT FLIP SIMULATION</span>
+                        <span className="text-emerald-400 flex items-center gap-1">✓ Modified</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">TAMPERING DETECTED</span>
+                        <span className="text-emerald-400 flex items-center gap-1">✓ Confirmed</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">AUTH TAG VERIFICATION</span>
+                        <span className="text-emerald-400 flex items-center gap-1">✓ Rejection Verified</span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-emerald-950/40 border border-emerald-900/60 p-3 text-emerald-300 text-[11px] flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block text-emerald-300">
+                          RESULT: AES-GCM INTEGRITY CHECK PASSED
+                        </span>
+                        <p className="text-[10px] text-emerald-400 mt-0.5">
+                          {demoState.tamperError}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 italic">
+                          AES-GCM authentication tag mismatch confirmed. The mismatch is the expected result because the ciphertext was deliberately modified.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-xl bg-rose-950/40 border border-rose-900/60 p-2.5 text-rose-300 text-[11px] flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold">Tamper Detection Test Failed:</span>
+                      <p className="text-[10px] text-rose-400 mt-0.5">
+                        {demoState.tamperError}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

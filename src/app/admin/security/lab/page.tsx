@@ -136,6 +136,7 @@ export default function SecurityLaboratoryPage() {
     decryptedPlaintext: string;
     tamperedCiphertext: string;
     tamperError: string | null;
+    tamperPassed: boolean;
   } | null>(null);
 
   // --- SECTION 0: SYNTHETIC ARGON2ID BRUTE-FORCE SIMULATION STATE ---
@@ -478,10 +479,14 @@ export default function SecurityLaboratoryPage() {
       const tamperedPayload = JSON.stringify({ ...parsed, ct: tampered });
 
       let tamperErr: string | null = null;
+      let tamperPassed = false;
       try {
         await decryptMessage(tamperedPayload, bobSharedKey);
-      } catch (err: any) {
-        tamperErr = err.message || "AES-GCM Authentication Tag Mismatch: Message was tampered with.";
+        tamperErr = "UNEXPECTED FAILURE: Tampered ciphertext was decrypted without throwing an authentication tag mismatch error.";
+        tamperPassed = false;
+      } catch {
+        tamperErr = "Tampering detected successfully. AES-GCM authentication rejected the modified message.";
+        tamperPassed = true;
       }
 
       setE2eeState({
@@ -494,6 +499,7 @@ export default function SecurityLaboratoryPage() {
         decryptedPlaintext: decrypted,
         tamperedCiphertext: tampered,
         tamperError: tamperErr,
+        tamperPassed,
       });
     } catch (err) {
       console.error("E2EE demo execution error:", err);
@@ -1805,16 +1811,63 @@ export default function SecurityLaboratoryPage() {
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
-                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                      <AlertTriangle className="h-4 w-4 text-rose-400" />
-                      Tamper Detection Test (1 Bit Flipped):
-                    </span>
-                    <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-900/60 text-xs text-rose-300">
-                      <span className="font-semibold block">Authentication Tag Failure:</span>
-                      <span className="text-[11px]">{e2eeState.tamperError}</span>
+                  {e2eeState.tamperPassed ? (
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-900/40 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                          Tamper Detection Test (1-Bit Modification Detected)
+                        </span>
+                        <Badge className="bg-emerald-950 text-emerald-300 border-emerald-700/50 text-[10px] uppercase tracking-wider font-mono">
+                          STATUS: PASS — TAMPERING DETECTED
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-1.5 text-[11px] font-mono text-slate-300 bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">ORIGINAL MESSAGE</span>
+                          <span className="text-emerald-400 flex items-center gap-1">✓ Decrypted</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">1-BIT FLIP SIMULATION</span>
+                          <span className="text-emerald-400 flex items-center gap-1">✓ Modified</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">TAMPERING DETECTED</span>
+                          <span className="text-emerald-400 flex items-center gap-1">✓ Confirmed</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">AUTH TAG VERIFICATION</span>
+                          <span className="text-emerald-400 flex items-center gap-1">✓ Rejection Verified</span>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60 text-xs text-emerald-300 flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-emerald-300">
+                            RESULT: AES-GCM INTEGRITY CHECK PASSED
+                          </span>
+                          <span className="text-[11px] text-emerald-400/90 block mt-0.5">
+                            {e2eeState.tamperError}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block mt-1 italic">
+                            AES-GCM authentication tag mismatch confirmed. The mismatch is the expected result because the ciphertext was deliberately modified.
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-slate-950 border border-rose-900/40 space-y-1.5">
+                      <span className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4 text-rose-400" />
+                        Tamper Detection Test Failed:
+                      </span>
+                      <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-900/60 text-xs text-rose-300">
+                        <span className="text-[11px]">{e2eeState.tamperError}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Wire Payload */}
