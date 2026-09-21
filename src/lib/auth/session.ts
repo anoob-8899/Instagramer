@@ -15,7 +15,7 @@ export interface SafeProfile {
 export interface SafeUser {
   id: string;
   username: string;
-  email: string;
+  email: string | null;
   role: Role;
   status: UserStatus;
   createdAt: Date;

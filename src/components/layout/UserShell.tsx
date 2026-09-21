@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { DesktopNav, NavUserState } from "@/components/navigation/DesktopNav";
 import { MobileNav } from "@/components/navigation/MobileNav";
+import { ClassroomBanner } from "@/components/layout/ClassroomBanner";
 
 export interface UserShellProps {
   children: React.ReactNode;
@@ -94,30 +95,33 @@ export const UserShell: React.FC<UserShellProps> = ({ children }) => {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:flex-row antialiased">
-      {/* Desktop Navigation Sidebar */}
-      <DesktopNav
-        currentUser={currentUser}
-        unreadNotificationsCount={unreadNotificationsCount}
-        onLogout={handleLogout}
-        isLoggingOut={isLoggingOut}
-      />
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
+      <ClassroomBanner />
+      <div className="flex flex-1 flex-col md:flex-row">
+        {/* Desktop Navigation Sidebar */}
+        <DesktopNav
+          currentUser={currentUser}
+          unreadNotificationsCount={unreadNotificationsCount}
+          onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
+        />
 
-      {/* Mobile Header & Bottom Navigation */}
-      <MobileNav
-        currentUser={currentUser}
-        unreadNotificationsCount={unreadNotificationsCount}
-        onLogout={handleLogout}
-        isLoggingOut={isLoggingOut}
-      />
+        {/* Mobile Header & Bottom Navigation */}
+        <MobileNav
+          currentUser={currentUser}
+          unreadNotificationsCount={unreadNotificationsCount}
+          onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
+        />
 
-      {/* Main Content Area */}
-      <main
-        className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 pb-24 sm:px-6 md:py-6 md:pb-6"
-        role="main"
-      >
-        <div className="mx-auto w-full max-w-4xl">{children}</div>
-      </main>
+        {/* Main Content Area */}
+        <main
+          className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 pb-24 sm:px-6 md:py-6 md:pb-6"
+          role="main"
+        >
+          <div className="mx-auto w-full max-w-4xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 };

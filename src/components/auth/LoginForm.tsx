@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
-import { AlertCircle, Clock, ShieldCheck, Camera, Loader2 } from "lucide-react";
+import { AlertCircle, Clock, ShieldCheck, Camera, Loader2, Eye, EyeOff } from "lucide-react";
 
 export const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -16,6 +16,7 @@ export const LoginForm: React.FC = () => {
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -43,7 +44,7 @@ export const LoginForm: React.FC = () => {
               "Account is temporarily locked due to consecutive failed attempts. Please wait before trying again."
           );
         } else {
-          setError(data.error || "Invalid username/email or password.");
+          setError(data.error || "Invalid username or password.");
         }
       } else {
         router.push(redirect);
@@ -66,7 +67,7 @@ export const LoginForm: React.FC = () => {
           Instagramer
         </CardTitle>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Enter your credentials to access your feed and profile
+          Enter your Username and Password to access your feed
         </p>
       </CardHeader>
 
@@ -103,31 +104,46 @@ export const LoginForm: React.FC = () => {
 
           <Input
             id="login-identifier"
-            label="Username or Email"
+            label="Username"
             type="text"
             autoComplete="username"
-            placeholder="Enter your username or email"
+            placeholder="e.g. student_demo_01"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
             disabled={loading}
           />
 
-          <Input
-            id="login-password"
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-          />
+          <div className="space-y-1.5">
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 font-mono tracking-widest"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 text-[11px] text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
-            <span>Secured with Argon2id encryption & HTTP-only sessions</span>
+            <span>Secured with Argon2id hashing & server-side account protection</span>
           </div>
         </CardContent>
 

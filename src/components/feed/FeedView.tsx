@@ -10,7 +10,7 @@ import { CheckCircle2, UserPlus, Check, Loader2 } from "lucide-react";
 export interface FeedUser {
   id: string;
   username: string;
-  email: string;
+  email?: string | null;
   role: string;
   displayName?: string | null;
   avatarUrl?: string | null;

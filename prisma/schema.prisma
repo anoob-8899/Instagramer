@@ -37,7 +37,7 @@ enum ReportStatus {
 model User {
   id                  String     @id @default(uuid())
   username            String     @unique
-  email               String     @unique
+  email               String?    @unique
   passwordHash        String
   role                Role       @default(USER)
   status              UserStatus @default(ACTIVE)
@@ -283,4 +283,29 @@ model Notification {
   @@index([createdAt])
   @@map("notifications")
 }
+
+model SecuritySetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("security_settings")
+}
+
+model SecurityEvent {
+  id        String   @id @default(uuid())
+  eventType String
+  username  String?
+  userId    String?
+  success   Boolean  @default(true)
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([createdAt])
+
+  @@map("security_events")
+}
+
 

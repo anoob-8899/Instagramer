@@ -33,6 +33,7 @@ import {
   Server,
   Shield,
   Zap,
+  Terminal,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -136,6 +137,122 @@ export default function SecurityLaboratoryPage() {
     tamperedCiphertext: string;
     tamperError: string | null;
   } | null>(null);
+
+  // --- SECTION 0: SYNTHETIC ARGON2ID BRUTE-FORCE SIMULATION STATE ---
+  const SYNTHETIC_TARGET_PASSWORD = "482915";
+  const SYNTHETIC_TARGET_HASH =
+    "$argon2id$v=19$m=65536,t=3,p=1$c3ludGhldGljc2FsdDEyMw$k8F3mL9P2qW5vX7rT1yZ4nJ6bV8cC0dE2fG4hI6jK8L";
+
+  const [bruteForceMode, setBruteForceMode] = useState<"SIMULATED_VULNERABLE" | "SIMULATED_PROTECTED">(
+    "SIMULATED_VULNERABLE"
+  );
+  const [bruteForceStatus, setBruteForceStatus] = useState<"IDLE" | "RUNNING" | "MATCH_FOUND" | "PROTECTED_BLOCKED">(
+    "IDLE"
+  );
+  const [bruteForceProgress, setBruteForceProgress] = useState<number>(0);
+  const [bruteForceLogs, setBruteForceLogs] = useState<
+    Array<{ id: string; text: string; type: "info" | "mismatch" | "match" | "blocked" | "rate_limit" | "lockout" }>
+  >([]);
+
+  const runSyntheticBruteForceDemo = async () => {
+    if (bruteForceStatus === "RUNNING") return;
+
+    setBruteForceStatus("RUNNING");
+    setBruteForceProgress(0);
+    setBruteForceLogs([]);
+
+    const addLog = (
+      text: string,
+      type: "info" | "mismatch" | "match" | "blocked" | "rate_limit" | "lockout"
+    ) => {
+      setBruteForceLogs((prev) => [...prev, { id: Math.random().toString(36).substr(2, 9), text, type }]);
+    };
+
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+    if (bruteForceMode === "SIMULATED_VULNERABLE") {
+      addLog("> INITIALIZING HASH VERIFICATION", "info");
+      addLog("> TARGET FORMAT: NUMERIC / 6 DIGIT", "info");
+      addLog("> SEARCH SPACE: 1,000,000 POSSIBILITIES", "info");
+      addLog(`> TARGET HASH: ${SYNTHETIC_TARGET_HASH.substring(0, 34)}...`, "info");
+      await sleep(350);
+
+      addLog("000000    HASH MISMATCH", "mismatch");
+      setBruteForceProgress(1);
+      await sleep(200);
+
+      addLog("000001    HASH MISMATCH", "mismatch");
+      setBruteForceProgress(2);
+      await sleep(200);
+
+      addLog("000002    HASH MISMATCH", "mismatch");
+      setBruteForceProgress(3);
+      await sleep(200);
+
+      addLog("> ACCELERATING CANDIDATE SCAN... [000003 -> 482909]", "info");
+      setBruteForceProgress(25);
+      await sleep(300);
+      setBruteForceProgress(50);
+      await sleep(300);
+      setBruteForceProgress(75);
+      await sleep(350);
+
+      addLog("482910    HASH MISMATCH", "mismatch");
+      await sleep(180);
+      addLog("482911    HASH MISMATCH", "mismatch");
+      await sleep(180);
+      addLog("482912    HASH MISMATCH", "mismatch");
+      await sleep(180);
+      addLog("482913    HASH MISMATCH", "mismatch");
+      await sleep(180);
+      addLog("482914    HASH MISMATCH", "mismatch");
+      setBruteForceProgress(99);
+      await sleep(300);
+
+      addLog("482915    MATCH DETECTED", "match");
+      addLog("> SUCCESS: SYNTHETIC CANDIDATE MATCHED (482915)", "match");
+      setBruteForceProgress(100);
+      setBruteForceStatus("MATCH_FOUND");
+    } else {
+      addLog("> INITIALIZING HASH VERIFICATION", "info");
+      addLog("> ENFORCING DEFENSE-IN-DEPTH CONTROLS: ARGON2ID + RATE LIMITING + ACCOUNT LOCKOUT", "info");
+      await sleep(350);
+
+      addLog("ATTEMPT 1/5: 000000 -> FAILED (HTTP 401 Unauthorized)", "mismatch");
+      setBruteForceProgress(20);
+      await sleep(250);
+
+      addLog("ATTEMPT 2/5: 000001 -> FAILED (HTTP 401 Unauthorized)", "mismatch");
+      setBruteForceProgress(40);
+      await sleep(250);
+
+      addLog("ATTEMPT 3/5: 000002 -> FAILED (HTTP 401 Unauthorized)", "mismatch");
+      setBruteForceProgress(60);
+      await sleep(250);
+
+      addLog("ATTEMPT 4/5: 000003 -> FAILED (HTTP 401 Unauthorized)", "mismatch");
+      setBruteForceProgress(80);
+      await sleep(250);
+
+      addLog("ATTEMPT 5/5: 000004 -> FAILED (HTTP 401 Unauthorized)", "mismatch");
+      setBruteForceProgress(100);
+      await sleep(350);
+
+      addLog("AUTHENTICATION ATTEMPT -> RATE LIMIT -> REQUEST BLOCKED", "rate_limit");
+      addLog("RATE LIMIT TRIGGERED: TOO MANY ATTEMPTS (HTTP 429)", "rate_limit");
+      await sleep(250);
+
+      addLog("FAILED ATTEMPTS: 5 / 5 -> ACCOUNT LOCKOUT: ACTIVE (15 MINUTES)", "lockout");
+      addLog("> AUTOMATED CANDIDATE SCAN TERMINATED BY SERVER DEFENSES", "blocked");
+      setBruteForceStatus("PROTECTED_BLOCKED");
+    }
+  };
+
+  const resetSyntheticBruteForceDemo = () => {
+    setBruteForceStatus("IDLE");
+    setBruteForceProgress(0);
+    setBruteForceLogs([]);
+  };
 
   // --- SECTION 6: ARCHITECTURE & LAYERS STATE ---
   const [expandedLayer, setExpandedLayer] = useState<number | null>(1);
@@ -401,6 +518,7 @@ export default function SecurityLaboratoryPage() {
     setE2eePlaintext("Confidential message protected by Instagramer E2EE.");
     setE2eeState(null);
     setExpandedLayer(1);
+    resetSyntheticBruteForceDemo();
     generateSyntheticSession();
     handleSanitizeAuditPayload();
   };
@@ -653,6 +771,7 @@ export default function SecurityLaboratoryPage() {
       <div className="flex overflow-x-auto gap-2 border-b border-slate-800 pb-2">
         {[
           { id: "all", label: "All Modules" },
+          { id: "00-bruteforce", label: "00 — Synthetic Argon2id Brute-Force" },
           { id: "01-hashing", label: "01 — Password Hashing" },
           { id: "02-lockout", label: "02 — Account Lockout" },
           { id: "03-session", label: "03 — Session Security" },
@@ -721,6 +840,249 @@ export default function SecurityLaboratoryPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ========================================================================= */}
+      {/* SECTION 00: SYNTHETIC ARGON2ID BRUTE-FORCE & PROTECTED MODE DEMO */}
+      {/* ========================================================================= */}
+      {(activeSection === "all" || activeSection === "00-bruteforce") && (
+        <Card className="border-slate-800 bg-slate-950 text-slate-100 shadow-md">
+          <CardHeader className="border-b border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <CardTitle className="text-base font-mono font-bold flex items-center gap-2 text-cyan-400">
+                <Terminal className="h-5 w-5 text-cyan-400 animate-pulse" />
+                00 — SYNTHETIC ARGON2ID BRUTE-FORCE & PROTECTED MODE DEMONSTRATION
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-mono ${
+                    bruteForceMode === "SIMULATED_VULNERABLE"
+                      ? "border-amber-700 bg-amber-950/60 text-amber-400"
+                      : "border-emerald-700 bg-emerald-950/60 text-emerald-400"
+                  }`}
+                >
+                  {bruteForceMode === "SIMULATED_VULNERABLE" ? "● SIMULATED VULNERABLE STATE" : "● SIMULATED PROTECTED STATE"}
+                </Badge>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-1 font-mono">
+              Offline educational candidate testing visualization on a 6-digit synthetic target account.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-5 pt-4">
+            {/* Safety & Isolation Technical Boundary Labels */}
+            <div className="rounded-xl border border-amber-800/80 bg-amber-950/20 p-3 text-xs text-amber-300 font-mono space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="border-amber-700 text-amber-300 text-[9px] uppercase font-bold">
+                  OFFLINE SYNTHETIC EDUCATIONAL SIMULATION
+                </Badge>
+                <span className="text-[10px] text-amber-400/90 font-bold">
+                  NOT AN ATTACK AGAINST /api/auth/login
+                </span>
+                <span className="text-[10px] text-amber-400/90 font-bold">
+                  ● NOT A SEARCH AGAINST A REAL NEON PASSWORD HASH
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
+                The demonstration target candidate (<strong>482915</strong>) and hash are generated strictly in browser memory. This demonstration never invokes `/api/auth/login` or queries Neon PostgreSQL user hashes.
+              </p>
+            </div>
+
+            {/* Simulation Telemetry & Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-mono">
+              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">TARGET</span>
+                <span className="text-slate-200 font-bold block">SYNTHETIC CLASSROOM ACCOUNT</span>
+                <span className="text-[9px] text-indigo-400">@student_demo_01</span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">FORMAT</span>
+                <span className="text-amber-400 font-bold block">6 DIGIT NUMERIC</span>
+                <span className="text-[9px] text-slate-400">Candidate: {SYNTHETIC_TARGET_PASSWORD}</span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">SEARCH SPACE</span>
+                <span className="text-cyan-400 font-bold block">1,000,000 POSSIBILITIES</span>
+                <span className="text-[9px] text-slate-400">000000 — 999999</span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">SIMULATION MODE</span>
+                <select
+                  value={bruteForceMode}
+                  onChange={(e) => {
+                    setBruteForceMode(e.target.value as any);
+                    resetSyntheticBruteForceDemo();
+                  }}
+                  className="w-full bg-slate-950 border border-slate-700 text-xs font-mono text-slate-200 rounded p-1 focus:outline-none"
+                >
+                  <option value="SIMULATED_VULNERABLE">SIMULATED VULNERABLE STATE</option>
+                  <option value="SIMULATED_PROTECTED">SIMULATED PROTECTED STATE</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Simulation Trigger Button */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="text-[11px] font-mono text-slate-400">
+                Status:{" "}
+                <span
+                  className={
+                    bruteForceStatus === "RUNNING"
+                      ? "text-amber-400 font-bold"
+                      : bruteForceStatus === "MATCH_FOUND"
+                      ? "text-emerald-400 font-bold"
+                      : bruteForceStatus === "PROTECTED_BLOCKED"
+                      ? "text-red-400 font-bold"
+                      : "text-slate-400"
+                  }
+                >
+                  {bruteForceStatus}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={runSyntheticBruteForceDemo}
+                  disabled={bruteForceStatus === "RUNNING"}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold text-xs px-4 flex items-center gap-1.5"
+                >
+                  {bruteForceStatus === "RUNNING" ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5 fill-current" />
+                  )}
+                  {bruteForceStatus === "RUNNING" ? "SIMULATING..." : "[ START BRUTE-FORCE SIMULATION ]"}
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={resetSyntheticBruteForceDemo}
+                  disabled={bruteForceStatus === "RUNNING"}
+                  className="border-slate-700 bg-slate-900 text-slate-300 text-xs font-mono"
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+
+            {/* Cinematic Hacker Terminal Window */}
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-300 space-y-2 shadow-inner">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2 text-[10px] text-slate-500">
+                <span className="flex items-center gap-2 text-cyan-400 font-bold">
+                  <Terminal className="h-3.5 w-3.5" /> SYNTHETIC_VERIFICATION_TERMINAL v2.4
+                </span>
+                <span>SEARCH SPACE PROGRESS: {Math.round(bruteForceProgress)}%</span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    bruteForceStatus === "MATCH_FOUND"
+                      ? "bg-emerald-500"
+                      : bruteForceStatus === "PROTECTED_BLOCKED"
+                      ? "bg-red-500"
+                      : "bg-cyan-400"
+                  }`}
+                  style={{ width: `${bruteForceProgress}%` }}
+                />
+              </div>
+
+              {/* Console Logs Display */}
+              <div className="space-y-1 max-h-56 overflow-y-auto pt-2 text-[11px] leading-relaxed">
+                {bruteForceLogs.length === 0 ? (
+                  <div className="text-slate-600 text-center py-6">
+                    [ TERMINAL IDLE — Click START BRUTE-FORCE SIMULATION to initiate classroom candidate testing ]
+                  </div>
+                ) : (
+                  bruteForceLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className={
+                        log.type === "info"
+                          ? "text-cyan-300 font-bold"
+                          : log.type === "mismatch"
+                          ? "text-slate-400"
+                          : log.type === "match"
+                          ? "text-emerald-400 font-bold bg-emerald-950/40 p-1 rounded"
+                          : log.type === "rate_limit"
+                          ? "text-amber-400 font-bold"
+                          : log.type === "lockout"
+                          ? "text-red-400 font-bold bg-red-950/40 p-1 rounded"
+                          : "text-red-300"
+                      }
+                    >
+                      {log.text}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Argon2id Conceptual Explanation Panel (HASHING ≠ ENCRYPTION) */}
+            <div className="rounded-xl border border-indigo-900/60 bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-indigo-900/50 pb-2">
+                <span className="text-xs font-mono font-bold text-indigo-300 flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-indigo-400" /> HASHING ≠ ENCRYPTION
+                </span>
+                <Badge variant="outline" className="border-indigo-700 bg-indigo-950 text-indigo-300 text-[9px] font-mono">
+                  ARGON2ID CONCEPTUAL EXPLANATION
+                </Badge>
+              </div>
+
+              {/* Diagrams */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                {/* Flow 1: Password Storage */}
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                  <span className="text-[10px] text-slate-400 block font-bold">1. PASSWORD STORAGE PIPELINE:</span>
+                  <div className="flex items-center justify-between text-[11px] text-slate-300">
+                    <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-200">PASSWORD</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-indigo-400" />
+                    <span className="px-2 py-1 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">ARGON2ID</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-emerald-400 font-bold">STORED HASH</span>
+                  </div>
+                </div>
+
+                {/* Flow 2: Candidate Verification */}
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                  <span className="text-[10px] text-slate-400 block font-bold">2. CANDIDATE VERIFICATION PIPELINE:</span>
+                  <div className="flex items-center justify-between text-[10px] text-slate-300">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-200">CANDIDATE</span>
+                    <ArrowRight className="h-3 w-3 text-indigo-400" />
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">ARGON2ID</span>
+                    <ArrowRight className="h-3 w-3 text-amber-400" />
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300">COMPARE</span>
+                    <ArrowRight className="h-3 w-3 text-emerald-400" />
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400 font-bold">MATCH / MISMATCH</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Technical Principles */}
+              <div className="text-[11px] text-slate-300 leading-relaxed font-mono space-y-1.5 pt-1">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-bold">•</span>
+                  <span><strong>HASHING CANNOT SIMPLY BE "DECRYPTED":</strong> Argon2id is a one-way mathematical function. An attacker who obtains a password hash cannot mathematically invert or decrypt it to recover the original password.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-bold">•</span>
+                  <span><strong>PASSWORD GUESSING REQUIRES TESTING CANDIDATES:</strong> Authentication and password cracking both rely on hashing candidate passwords and comparing candidate digests against stored hashes.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-bold">•</span>
+                  <span><strong>DEFENSE IN DEPTH:</strong> Argon2id memory-hardness (64 MB RAM per hash) makes offline candidate guessing expensive, while server-side Rate Limiting + Account Lockout render online dictionary attacks impossible.</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ========================================================================= */}
       {/* SECTION 01: PASSWORD HASHING & DECOMPOSITION & VERIFICATION */}

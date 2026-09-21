@@ -6,19 +6,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/Card";
-import { AlertCircle, ShieldCheck, Camera, Loader2, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ShieldCheck, Camera, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 export const SignupForm: React.FC = () => {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [clientErrors, setClientErrors] = useState<{
     username?: string;
-    email?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
@@ -29,13 +29,11 @@ export const SignupForm: React.FC = () => {
   const validateClient = (): boolean => {
     const errors: {
       username?: string;
-      email?: string;
       password?: string;
       confirmPassword?: string;
     } = {};
 
     const cleanUsername = username.trim();
-    const cleanEmail = email.trim();
 
     if (!cleanUsername) {
       errors.username = "Username is required.";
@@ -43,16 +41,10 @@ export const SignupForm: React.FC = () => {
       errors.username = "Username must be 3-30 characters (letters, numbers, underscores).";
     }
 
-    if (!cleanEmail) {
-      errors.email = "Email address is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      errors.email = "Please enter a valid email address.";
-    }
-
     if (!password) {
       errors.password = "Password is required.";
-    } else if (password.length < 8) {
-      errors.password = "Password must be at least 8 characters long.";
+    } else if (!/^[0-9]{6}$/.test(password)) {
+      errors.password = "Password must contain exactly 6 digits.";
     }
 
     if (!confirmPassword) {
@@ -82,8 +74,8 @@ export const SignupForm: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: username.trim(),
-          email: email.trim(),
           password,
+          confirmPassword,
         }),
       });
 
@@ -95,7 +87,7 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      // 2. Automatically log in after registration to initialize session
+      // 2. Automatically log in after registration
       const loginRes = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,7 +120,7 @@ export const SignupForm: React.FC = () => {
           Join Instagramer
         </CardTitle>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Sign up to share moments and connect with friends
+          Sign up with your Username and 6-digit PIN code
         </p>
       </CardHeader>
 
@@ -150,7 +142,7 @@ export const SignupForm: React.FC = () => {
             label="Username"
             type="text"
             autoComplete="username"
-            placeholder="e.g. alex_rivera"
+            placeholder="e.g. student_demo_01"
             value={username}
             onChange={(e) => {
               setUsername(e.target.value);
@@ -163,64 +155,82 @@ export const SignupForm: React.FC = () => {
             disabled={loading}
           />
 
-          <Input
-            id="signup-email"
-            label="Email Address"
-            type="email"
-            autoComplete="email"
-            placeholder="e.g. alex@example.com"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (clientErrors.email) {
-                setClientErrors((prev) => ({ ...prev, email: undefined }));
-              }
-            }}
-            error={clientErrors.email}
-            required
-            disabled={loading}
-          />
+          {/* Password with Show/Hide Toggle */}
+          <div className="space-y-1.5">
+            <label htmlFor="signup-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password (6 Digits)
+            </label>
+            <div className="relative">
+              <input
+                id="signup-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="••••••"
+                maxLength={6}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (clientErrors.password) {
+                    setClientErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
+                required
+                disabled={loading}
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 font-mono tracking-widest"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {clientErrors.password && <p className="text-xs text-red-500">{clientErrors.password}</p>}
+            {!clientErrors.password && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Must be exactly 6 numeric digits (000000–999999)</p>
+            )}
+          </div>
 
-          <Input
-            id="signup-password"
-            label="Password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (clientErrors.password) {
-                setClientErrors((prev) => ({ ...prev, password: undefined }));
-              }
-            }}
-            error={clientErrors.password}
-            helperText="Must be at least 8 characters long"
-            required
-            disabled={loading}
-          />
-
-          <Input
-            id="signup-confirm-password"
-            label="Confirm Password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="Repeat your password"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              if (clientErrors.confirmPassword) {
-                setClientErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-              }
-            }}
-            error={clientErrors.confirmPassword}
-            required
-            disabled={loading}
-          />
+          {/* Confirm Password with Show/Hide Toggle */}
+          <div className="space-y-1.5">
+            <label htmlFor="signup-confirm-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                id="signup-confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="••••••"
+                maxLength={6}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (clientErrors.confirmPassword) {
+                    setClientErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  }
+                }}
+                required
+                disabled={loading}
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 font-mono tracking-widest"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {clientErrors.confirmPassword && <p className="text-xs text-red-500">{clientErrors.confirmPassword}</p>}
+          </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 text-[11px] text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
-            <span>Profile and authentication credentials secured automatically</span>
+            <span>Secured automatically with server-side Argon2id password hashing</span>
           </div>
         </CardContent>
 
